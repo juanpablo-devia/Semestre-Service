@@ -1,25 +1,26 @@
 package co.edu.uceva.semestreservice.controller;
 
-import co.edu.uceva.semestreservice.dto.SemestreRequest;
-import co.edu.uceva.semestreservice.dto.SemestreResponse;
+import co.edu.uceva.semestreservice.dto.*;
 import co.edu.uceva.semestreservice.model.Semestre;
 import co.edu.uceva.semestreservice.service.SemestreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/semestres")
+@RequestMapping("/api/v1/semestre-service")
 public class SemestreController {
 
     @Autowired
     private SemestreService semestreService;
 
-    // Crear semestre
-    @PostMapping
+    @PostMapping("/semestres")
     public ResponseEntity<SemestreResponse> saveSemestre(@RequestBody SemestreRequest request) {
         Semestre semestre = new Semestre();
         semestre.setActivo(request.getActivo());
@@ -28,47 +29,24 @@ public class SemestreController {
         semestre.setIdPrograma(request.getIdPrograma());
         semestre.setNumeroSemestre(request.getNumeroSemestre());
 
-        Semestre guardado = semestreService.saveSemestre(semestre);
-        SemestreResponse response = new SemestreResponse(
-                guardado.getId(),
-                guardado.getActivo(),
-                guardado.getFechaInicio(),
-                guardado.getFechaFin(),
-                guardado.getNumeroSemestre()
-        );
-
-        return ResponseEntity.ok(response);
+        Semestre saved = semestreService.saveSemestre(semestre);
+        return ResponseEntity.ok(new SemestreResponse(saved.getId(), saved.getActivo(), saved.getFechaInicio(), saved.getFechaFin(), saved.getNumeroSemestre()));
     }
 
-    // Obtener todos los semestres
-    @GetMapping
+    @GetMapping("/semestres")
     public List<SemestreResponse> getAllSemestres() {
         return semestreService.getAllSemestres().stream()
-                .map(s -> new SemestreResponse(
-                        s.getId(),
-                        s.getActivo(),
-                        s.getFechaInicio(),
-                        s.getFechaFin(),
-                        s.getNumeroSemestre()))
+                .map(s -> new SemestreResponse(s.getId(), s.getActivo(), s.getFechaInicio(), s.getFechaFin(), s.getNumeroSemestre()))
                 .collect(Collectors.toList());
     }
 
-    // Obtener semestre por ID
-    @GetMapping("/{id}")
+    @GetMapping("/semestres/{id}")
     public ResponseEntity<SemestreResponse> getSemestreById(@PathVariable Long id) {
         Semestre s = semestreService.getSemestreById(id);
-        SemestreResponse response = new SemestreResponse(
-                s.getId(),
-                s.getActivo(),
-                s.getFechaInicio(),
-                s.getFechaFin(),
-                s.getNumeroSemestre()
-        );
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new SemestreResponse(s.getId(), s.getActivo(), s.getFechaInicio(), s.getFechaFin(), s.getNumeroSemestre()));
     }
 
-    // Actualizar semestre
-    @PutMapping("/{id}")
+    @PutMapping("/semestres/{id}")
     public ResponseEntity<SemestreResponse> updateSemestre(@PathVariable Long id, @RequestBody SemestreRequest request) {
         Semestre semestre = new Semestre();
         semestre.setActivo(request.getActivo());
@@ -77,22 +55,37 @@ public class SemestreController {
         semestre.setIdPrograma(request.getIdPrograma());
         semestre.setNumeroSemestre(request.getNumeroSemestre());
 
-        Semestre actualizado = semestreService.updateSemestre(id, semestre);
-        SemestreResponse response = new SemestreResponse(
-                actualizado.getId(),
-                actualizado.getActivo(),
-                actualizado.getFechaInicio(),
-                actualizado.getFechaFin(),
-                actualizado.getNumeroSemestre()
-        );
-
-        return ResponseEntity.ok(response);
+        Semestre updated = semestreService.updateSemestre(id, semestre);
+        return ResponseEntity.ok(new SemestreResponse(updated.getId(), updated.getActivo(), updated.getFechaInicio(), updated.getFechaFin(), updated.getNumeroSemestre()));
     }
 
-    // Eliminar semestre
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSemestre(@PathVariable Long id) {
+    @DeleteMapping("/semestres/{id}")
+    public ResponseEntity<DeleteResponse> deleteSemestre(@PathVariable Long id) {
         semestreService.deleteSemestre(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new DeleteResponse("Semestre con ID " + id + " eliminado correctamente"));
+    }
+
+    @GetMapping("/semestre/page/{page}")
+    public ResponseEntity<SemestrePageResponse> getSemestresPaginados(@PathVariable int page) {
+        Pageable pageable = PageRequest.of(page, 10);
+        Page<Semestre> semestres = semestreService.getSemestresPaginados(pageable);
+
+        List<SemestreResponse> lista = semestres.getContent().stream()
+                .map(s -> new SemestreResponse(
+                        s.getId(),
+                        s.getActivo(),
+                        s.getFechaInicio(),
+                        s.getFechaFin(),
+                        s.getNumeroSemestre()))
+                .collect(Collectors.toList());
+
+        SemestrePageResponse respuesta = new SemestrePageResponse(
+                lista,
+                semestres.getTotalPages(),
+                semestres.getTotalElements(),
+                semestres.getNumber()
+        );
+
+        return ResponseEntity.ok(respuesta);
     }
 }

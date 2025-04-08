@@ -4,6 +4,8 @@ import co.edu.uceva.semestreservice.exception.ResourceNotFoundException;
 import co.edu.uceva.semestreservice.model.Semestre;
 import co.edu.uceva.semestreservice.repository.SemestreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,13 +22,14 @@ public class SemestreServiceImpl implements SemestreService {
     }
 
     @Override
-    public List<Semestre> getAllSemestres(){
+    public List<Semestre> getAllSemestres() {
         return semestreRepository.findAll();
     }
 
     @Override
-    public Semestre getSemestreById(Long id){
-        return semestreRepository.findById(id).orElse(null);
+    public Semestre getSemestreById(Long id) {
+        return semestreRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Semestre con ID " + id + " no encontrado"));
     }
 
     @Override
@@ -47,8 +50,11 @@ public class SemestreServiceImpl implements SemestreService {
     public void deleteSemestre(Long id) {
         Semestre existente = semestreRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Semestre con ID " + id + " no encontrado"));
-
         semestreRepository.deleteById(id);
     }
 
+    @Override
+    public Page<Semestre> getSemestresPaginados(Pageable pageable) {
+        return semestreRepository.findAll(pageable);
+    }
 }
